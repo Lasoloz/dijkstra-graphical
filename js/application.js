@@ -74,17 +74,25 @@ function create() {
 
     var ready = true;
 
+    var freq_x = parseInt(document.getElementById("graph-freq-x").value);
+    var freq_y = parseInt(document.getElementById("graph-freq-y").value);
+    var res_x = parseInt(document.getElementById("graph-count-x").value);
+    var res_y = parseInt(document.getElementById("graph-count-y").value);
+
     if (optAligned.checked) {
-        var freq_x = parseInt(document.getElementById("graph-freq-x").value);
-        var freq_y = parseInt(document.getElementById("graph-freq-y").value);
-        var res_x = parseInt(document.getElementById("graph-count-x").value);
-        var res_y = parseInt(document.getElementById("graph-count-y").value);
 
         graph = new Graph(0, freq_x, freq_y, res_x, res_y);
 
         renderer.nodeSize = 12;
         renderer.renderLabels = true;
-    } else if (optRandom.checked || optEdgelist.checked) {
+    } else if (optRandom.checked) {
+        graph = new Graph(1, freq_x, freq_y, res_x, res_y);
+
+        renderer.nodeSize = 4;
+        renderer.renderLabels = false;
+
+        // graph.renderJustTree = true;
+    } else if (optEdgelist.checked) {
         alert("Option currently not supported!");
         ready = false;
     } else {

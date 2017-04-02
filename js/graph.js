@@ -1,5 +1,5 @@
+// GNode is for creating an adjacency matrix-like structure
 function GNode(x, y, label="") {
-    // Node for creating an adjacency matrix-like structure
     this.x = x;
     this.y = y;
 
@@ -36,15 +36,17 @@ function Graph(createObj=0, freq_x=100, freq_y=100,
     //      nodes (directed, weighted based on distances)
     //  <array of edges> - Create graph from list of edges ()
 
-    this.nodeNum = resolution_x * resolution_y;
-    this.nodes = new Array(this.nodeNum);
 
     this.directed;
     this.weighted;
 
+    this.nodes = new Array();
+
     this.renderJustTree;
 
     if (createObj === 0) {
+        var nodeNum = resolution_x * resolution_y;
+        this.nodes = new Array(nodeNum);
         // Create nodes on grid:
         var y = freq_y / 2;
         for (var i = 0; i < resolution_y; ++i) {
@@ -110,14 +112,62 @@ function Graph(createObj=0, freq_x=100, freq_y=100,
         this.weighted = true;
     } else if (createObj === 1) {
         // Build up a big graph for beautiful spanning trees
-        // ON TODO LIST
+        var orig_y = freq_y / 2;
+
+        var index = 0;
+
+        for (i = 0; i < resolution_y; ++i) {
+            var orig_x = freq_x / 2;
+            for (j = 0; j < resolution_x; ++j) {
+                var pointExists = (Math.random() < 0.8) ? (true) : (false);
+
+                if (pointExists) {
+                    var m = (Math.random() < 0.5) ? (1) : (-1);
+                    var new_x =
+                        orig_x + m * Math.sqrt(Math.random() * (freq_x / 2));
+                    m = (Math.random() < 0.5) ? (1) : (-1);
+                    var new_y =
+                        orig_y + m * Math.sqrt(Math.random() * (freq_y / 2));
+
+                    this.nodes.push(new GNode(new_x, new_y, index.toString()));
+                    ++index;
+                }
+
+                orig_x += freq_x;
+            }
+
+            orig_y += freq_y;
+        }
+
+        var optimal_dist = (freq_x + freq_y) / 2;
+
+        // console.log("Length of graph array: ", this.nodes.length);
+
+        for (i = 0; i < this.nodes.length - 1; ++i) {
+            for (j = i + 1; j < this.nodes.length; ++j) {
+                var dist = distance(this.nodes[i].x,
+                                    this.nodes[i].y,
+                                    this.nodes[j].x,
+                                    this.nodes[j].y);
+
+                // var randNum = Math.random() / 2.0 + 1.0;
+
+                if (dist < optimal_dist * 1.5) {
+                    this.nodes[i].pushEdge(j, dist);
+                    this.nodes[j].pushEdge(i, dist);
+                }
+            }
+        }
+
+        this.directed = false;
+        this.weighted = true;
     }
 
 
     this.renderIt = function(renderer) {
         if (this.directed) {
             // Render a directed graph
-            for (var i = 0; i < this.nodeNum; ++i) {
+            for (var i = 0; i < this.nodes.length; ++i) {
                 xx = this.nodes[i].x;
                 yy = this.nodes[i].y;
                 renderer.renderNode(xx, yy,
@@ -141,13 +191,45 @@ function Graph(createObj=0, freq_x=100, freq_y=100,
                         var yy2 = node2.y;
                         var label = this.nodes[i].edges[j].weight.toString();
 
-                        renderer.renderDirectedEdge(xx, yy, xx2, yy2, state, label);
+                        renderer.renderDirectedEdge(xx, yy, xx2, yy2,
+                                                    state, label);
                     }
                 }
             }
         } else {
             // Render an undirected graph
-            // on TODO list
+            for (var i = 0; i < this.nodes.length; ++i) {
+                xx = this.nodes[i].x;
+                yy = this.nodes[i].y;
+                renderer.renderNode(xx, yy,
+                                    this.nodes[i].state,
+                                    this.nodes[i].label,
+                                    this.nodes[i].dist);
+                
+                var length = this.nodes[i].edges.length;
+
+                for (var j = 0; j < length; ++j) {
+                    var index = this.nodes[i].edges[j].index;
+
+                    if (index < i) {
+                        // We can render it!
+                        var state = this.nodes[i].edges[j].state;
+
+                        if (!this.renderJustTree ||
+                            this.renderJustTree && state == 3 || state == 1) {
+                            // We can render it, because it's part of the
+                            // spannign tree, or we don't render just spanning
+                            // tree
+                            var xx2 = this.nodes[index].x;
+                            var yy2 = this.nodes[index].y;
+                            var label =
+                                this.nodes[i].edges[j].weight.toString();
+                            renderer.renderUndirectedEdge(xx, yy, xx2, yy2,
+                                                          state, label);
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -170,7 +252,7 @@ function Graph(createObj=0, freq_x=100, freq_y=100,
     this.lastEdgeState = 0;
 
     // Parents array
-    this.parents = new Array(this.nodeNum);
+    this.parents = new Array(this.nodes.length);
 
     // Get length of the nodes array
     this.getLenght = function() {
@@ -216,12 +298,14 @@ function Graph(createObj=0, freq_x=100, freq_y=100,
         var length = this.nodes[index].edges.length;
         var i = 0;
         while (i < length) {
-            if (this.nodes[index].edges[i] == nodeI) {
+            if (this.nodes[index].edges[i].index == nodeI) {
                 this.nodes[index].edges[i].state = state; // Here
             }
 
             ++i;
         }
+
+        // console.log("Here!!!");
     }
 
     this.searchNextNode = function() {
